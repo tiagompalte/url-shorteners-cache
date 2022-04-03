@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-redis/redis/v8"
+	"github.com/joho/godotenv"
 	"github.com/teris-io/shortid"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -19,24 +21,29 @@ type errorResponse struct {
 var rdb *redis.Client
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     os.Getenv("REDIS_HOST"),
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
 
 	ctx := rdb.Context()
-	err := rdb.Ping(ctx).Err()
+	err = rdb.Ping(ctx).Err()
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalf(err.Error())
 	}
 
 	http.HandleFunc("/", routes)
 
-	log.Println("Server started in port 8000")
-	err = http.ListenAndServe(":8000", nil)
+	log.Println("Server started in port " + os.Getenv("PORT"))
+	err = http.ListenAndServe(":"+os.Getenv("PORT"), nil)
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatal(err.Error())
 	}
 }
 
